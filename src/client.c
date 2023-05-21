@@ -45,6 +45,72 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
     
     printf("connected to %s\n", addrstr);
 
+    FILE *file;
+    char command[100];
+    char filename[100];
+    char extension[100];
+    char allowed_extensions[6][10];
+
+    strcpy(allowed_extensions[0], "txt");
+    strcpy(allowed_extensions[1], "c");
+    strcpy(allowed_extensions[2], "cpp");
+    strcpy(allowed_extensions[3], "py");
+    strcpy(allowed_extensions[4], "tex");
+    strcpy(allowed_extensions[5], "java");
+
+    printf("Enter command: \n");
+    fgets(command, sizeof(command), stdin);
+
+    char *select_substring = strstr(command, "select file");
+    if(select_substring != NULL) {
+
+        strcpy(filename, strrchr(command, ' ') + 1); // stores the substring correspondent to the filename in "filename"
+        filename[strcspn(filename, "\n")] = '\0'; // removes the '/n' after the filename
+        strcpy(extension, strrchr(filename, '.') + 1); // stores the substring correspondent to the file extension in "extension"
+        // tests if the extension is allowed
+        int extension_is_allowed = 0;
+        for(int i = 0; i < 6; i++) {
+            if(strcmp(allowed_extensions[i], extension) == 0) {
+                printf("%s is allowed\n", extension);
+                extension_is_allowed = 1;
+                break;
+            }
+        }
+
+        if (!extension_is_allowed) {
+            return -1;
+        }
+
+        file = fopen(filename, "r");
+        if (file == NULL) {
+            printf("Unable to open the file.\n");
+            return 1;
+        }
+
+        // Determine the size of the file
+        fseek(file, 0, SEEK_END);
+        long file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        // Allocate memory to store the file contents
+        char *file_content = (char *)malloc(file_size + 1);
+        if (file_content == NULL) {
+            printf("Memory allocation failed.\n");
+            fclose(file);
+            return 1;
+        }
+
+        // Read the file content
+        fread(file_content, 1, file_size, file);
+        file_content[file_size] = '\0';
+
+        fclose(file);
+
+        printf("File content:\n%s\n", file_content);
+
+        free(file_content);
+    }    
+
     char buf[BUFSZ]; // buf is the data that will be sent to the server
     memset(buf, 0, BUFSZ);
     printf("mensagem> ");
