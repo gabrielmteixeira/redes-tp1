@@ -58,28 +58,28 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
     }
     char addrstr[BUFSZ];
     addrtostr(addr, addrstr, BUFSZ);
-    
-    printf("connected to %s\n", addrstr);
 
     char buf[BUFSZ]; // buf is the data that will be sent to the server
     char server_response[BUFSZ];
     memset(buf, 0, BUFSZ);
 
     FILE *file;
-    char command[100];
-    char filename[100];
-    char extension[100];
+    char command[BUFSZ];
+    char filename[BUFSZ];
+    char extension[BUFSZ];
+    memset(command, 0, BUFSZ);
+    memset(filename, 0, BUFSZ);
+    memset(extension, 0, BUFSZ);
     char allowed_extensions[6][10];
 
     strcpy(allowed_extensions[0], "txt");
-    strcpy(allowed_extensions[1], "c");
-    strcpy(allowed_extensions[2], "cpp");
+    strcpy(allowed_extensions[1], "cpp");
+    strcpy(allowed_extensions[2], "c");
     strcpy(allowed_extensions[3], "py");
     strcpy(allowed_extensions[4], "tex");
     strcpy(allowed_extensions[5], "java");
 
     while(1) {
-        printf("Enter command: \n");
         fgets(command, sizeof(command), stdin);
 
         char *select_substring = strstr(command, "select file ");
@@ -129,29 +129,21 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
 
             printf("%s selected\n", filename);
         } else if (verify_send(command)) { // "send" command
+            if(strlen(buf) == 0) {
+                printf("no file selected!\n");
+                continue;
+            }
             // count stores the number of bytes transmitted
-            // strlen(buf) is the size of the string, + 1 aims to include the "\0"
-            printf("Buffer: %s\n", buf);
-            int count = send(s, buf, strlen(buf) + 1, 0);
-            // if count differs from strlen(buf) + 1 (the size of the message sent), an error has ocurred
-            if (count != strlen(buf) + 1) {
+            // strlen(buf) is the size of the string
+            int count = send(s, buf, strlen(buf), 0);
+            // if count differs from strlen(buf) an error has ocurred
+            if (count != strlen(buf)) {
                 logexit("send");
             }
             memset(server_response, 0, BUFSZ);
             recv(s, server_response, BUFSZ, 0);
-            // unsigned total = 0;
-            // while(1) {
-            //     count = recv(s, server_response + total, BUFSZ - total, 0);
-            //     printf("Flag \n");
-            //     if (count == 0) {
-            //         // Connection terminated
-            //         break;
-            //     }
-            //     total += count;
-            // }
-            // printf("received %u bytes\n", total);
 
-            printf("Server response: %s\n", server_response);
+            printf("%s", server_response);
             memset(server_response, 0, BUFSZ);
         } else if (verify_exit(command)) { // "exit" command
             memset(buf, 0, BUFSZ);

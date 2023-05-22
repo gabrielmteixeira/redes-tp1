@@ -58,98 +58,91 @@ int main (int argc, char **argv) {
 
     char addrstr[BUFSZ];
     addrtostr(addr, addrstr, BUFSZ);
-    printf("bound to %s, waiting connections\n", addrstr);
+
+    struct sockaddr_storage cstorage;
+    struct sockaddr *caddr = (struct sockaddr *)(&cstorage);
+    socklen_t caddrlen = sizeof(cstorage);
+
+    int csock = accept(s, caddr, &caddrlen); // returns a new socket, which is used to interact with client
+    if (csock == -1) {
+        logexit("accept");
+    }
+
+    char caddrstr[BUFSZ];
+    addrtostr(caddr, caddrstr, BUFSZ);
 
     while(1) {
-        struct sockaddr_storage cstorage;
-        struct sockaddr *caddr = (struct sockaddr *)(&cstorage);
-        socklen_t caddrlen = sizeof(cstorage);
+        char buf[BUFSZ];
+        char server_response[BUFSZ];
+        memset(buf, 0, BUFSZ);
+        memset(server_response, 0, BUFSZ);
+        size_t count = recv(csock, buf, BUFSZ, 0);
 
-        int csock = accept(s, caddr, &caddrlen); // returns a new socket, which is used to interact with client
-        if (csock == -1) {
-            logexit("accept");
+        if (count == 0) {
+            close(csock);
+            close(s);
+            return 1;
         }
 
-        char caddrstr[BUFSZ];
-        addrtostr(caddr, caddrstr, BUFSZ);
-        printf("[log] connection from %s\n", caddrstr);
-
-        while(1) {
-            char buf[BUFSZ];
-            char server_response[BUFSZ];
-            memset(buf, 0, BUFSZ);
-            memset(server_response, 0, BUFSZ);
-            size_t count = recv(csock, buf, BUFSZ, 0);
-
-            if (count == 0) {
-                close(csock);
-                return 1;
-            }
-
-            if (verify_exit(buf)) {
-                printf("Connection closed\n");
-                close(csock);
-                exit(EXIT_SUCCESS);
-            }
-            printf("Buffer: %s\n", buf);
-
-            char filename[BUFSZ];
-            char file_content[BUFSZ];
-            memset(filename, 0, BUFSZ);
-            memset(file_content, 0, BUFSZ);
-
-            char* filename_splitter = strchr(buf, '.'); // used to split the filename from the file content
-            if (filename_splitter != NULL) {
-                *filename_splitter = '\0'; 
-                filename_splitter++;
-            }
-            strcpy(filename, buf);
-
-            if (strncmp(filename_splitter, "txt", 3) == 0) {
-                strcat(filename, ".txt");
-            } else if (strncmp(filename_splitter, "c", 1) == 0) {
-                strcat(filename, ".c");
-            } else if (strncmp(filename_splitter, "cpp", 3) == 0) {
-                strcat(filename, ".cpp");
-            } else if (strncmp(filename_splitter, "py", 2) == 0) {
-                strcat(filename, ".py");
-            } else if (strncmp(filename_splitter, "tex", 3) == 0) {
-                strcat(filename, ".tex");
-            } else if (strncmp(filename_splitter, "java", 4) == 0) {
-                strcat(filename, ".java");
-            } else {
-                logexit("invalid file extension");
-            }
-            strcpy(file_content, buf + strlen(filename));
-            printf("Filename: %s\n", filename);
-            printf("File content: %s\n", file_content);
-
-            int file_already_existed = 0;
-            if (access(filename, F_OK) == 0) { // verify if file already exists in directory
-                file_already_existed = 1;
-            }
-
-            FILE *file;
-            file = fopen(filename, "w");
-            if (file == NULL) {
-                logexit("Unable to create/overwrite file");
-            }
-            fputs(file_content, file);
-            fclose(file);
-
-            if (file_already_existed) {
-                sprintf(server_response, "file %.500s overwritten\n", filename);
-            } else {
-                sprintf(server_response, "file %.500s received\n", filename);
-            }
-            printf("Server response: %s\n", server_response);
-
-            count = send(csock, server_response, strlen(server_response), 0);
-            if (count != strlen(server_response)) {
-                logexit("send");
-            }
+        if (verify_exit(buf)) {
+            printf("Connection closed\n");
+            close(csock);
+            close(s);
+            exit(EXIT_SUCCESS);
         }
-        close(csock);
+
+        char filename[BUFSZ];
+        char file_content[BUFSZ];
+        memset(filename, 0, BUFSZ);
+        memset(file_content, 0, BUFSZ);
+
+        char* filename_splitter = strchr(buf, '.'); // used to split the filename from the file content
+        if (filename_splitter != NULL) {
+            *filename_splitter = '\0'; 
+            filename_splitter++;
+        }
+        strcpy(filename, buf);
+
+        if (strncmp(filename_splitter, "txt", 3) == 0) {
+            strcat(filename, ".txt");
+        } else if (strncmp(filename_splitter, "cpp", 3) == 0) {
+            strcat(filename, ".cpp");
+        } else if (strncmp(filename_splitter, "c", 1) == 0) {
+            strcat(filename, ".c");
+        } else if (strncmp(filename_splitter, "py", 2) == 0) {
+            strcat(filename, ".py");
+        } else if (strncmp(filename_splitter, "tex", 3) == 0) {
+            strcat(filename, ".tex");
+        } else if (strncmp(filename_splitter, "java", 4) == 0) {
+            strcat(filename, ".java");
+        } else {
+            logexit("invalid file extension");
+        }
+        strcpy(file_content, buf + strlen(filename));
+
+        int file_already_existed = 0;
+        if (access(filename, F_OK) == 0) { // verify if file already exists in directory
+            file_already_existed = 1;
+        }
+
+        FILE *file;
+        file = fopen(filename, "w");
+        if (file == NULL) {
+            logexit("Unable to create/overwrite file");
+        }
+        fputs(file_content, file);
+        fclose(file);
+
+        if (file_already_existed) {
+            sprintf(server_response, "file %.500s overwritten\n", filename);
+        } else {
+            sprintf(server_response, "file %.500s received\n", filename);
+        }
+
+        count = send(csock, server_response, strlen(server_response), 0);
+        if (count != strlen(server_response)) {
+            logexit("send");
+        }
     }
 
     exit(EXIT_SUCCESS);
