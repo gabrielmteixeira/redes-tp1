@@ -151,14 +151,15 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
             // }
             // printf("received %u bytes\n", total);
 
-            puts(server_response);
+            // puts(server_response);
+            printf("Server response: %s\n", server_response);
             memset(server_response, 0, BUFSZ);
         } else if (verify_exit(command)) { // "exit" command
             memset(buf, 0, BUFSZ);
             strcpy(buf, "exit\\end");
 
-            int count = send(s, buf, strlen(buf) + 1, 0);
-            if (count != strlen(buf) + 1) {
+            int count = send(s, buf, strlen(buf), 0);
+            if (count != strlen(buf)) {
                 logexit("send");
             }
 
