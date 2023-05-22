@@ -66,15 +66,17 @@ int main (int argc, char **argv) {
         addrtostr(caddr, caddrstr, BUFSZ);
         printf("[log] connection from %s\n", caddrstr);
 
-        char buf[BUFSZ];
-        memset(buf, 0, BUFSZ);
-        size_t count = recv(csock, buf, BUFSZ, 0);
-        printf("[msg] %s, %d, bytes: %s\n", caddrstr, (int)count, buf);
+        while(1) {
+            char buf[BUFSZ];
+            memset(buf, 0, BUFSZ);
+            size_t count = recv(csock, buf, BUFSZ, 0);
+            printf("[msg] %s, %d, bytes: %s\n", caddrstr, (int)count, buf);
 
-        sprintf(buf, "remote endpoint: %.1000s\n", caddrstr);
-        count = send(csock, buf, strlen(buf) + 1, 0);
-        if (count != strlen(buf) + 1) {
-            logexit("send");
+            sprintf(buf, "Mensagem teste: remote endpoint: %.500s\n", caddrstr);
+            count = send(csock, buf, strlen(buf) + 1, 0);
+            if (count != strlen(buf) + 1) {
+                logexit("send");
+            }
         }
         close(csock);
     }
