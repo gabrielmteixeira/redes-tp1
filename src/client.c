@@ -122,8 +122,10 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
             memset(buf, 0, BUFSZ);
             strcpy(buf, filename);
             fread(buf + strlen(filename), 1, file_size, file);
+            strcat(buf, "\\end");
 
             fclose(file);
+
 
             printf("%s selected\n", filename);
         } else if (verify_send(command)) { // "send" command
@@ -152,6 +154,14 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
             puts(server_response);
             memset(server_response, 0, BUFSZ);
         } else if (verify_exit(command)) { // "exit" command
+            memset(buf, 0, BUFSZ);
+            strcpy(buf, "exit\\end");
+
+            int count = send(s, buf, strlen(buf) + 1, 0);
+            if (count != strlen(buf) + 1) {
+                logexit("send");
+            }
+
             close(s);
             exit(EXIT_SUCCESS);
         } else { // Unknown command

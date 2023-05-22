@@ -16,6 +16,14 @@ void usage(int argc, char **argv) {
     exit(EXIT_FAILURE);
 }
 
+int verify_exit(char *buf) {
+    buf[strcspn(buf, "\\")] = '\0';
+    if (strcmp(buf, "exit") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 
 int main (int argc, char **argv) {
     if (argc < 3) {
@@ -70,7 +78,12 @@ int main (int argc, char **argv) {
             char buf[BUFSZ];
             memset(buf, 0, BUFSZ);
             size_t count = recv(csock, buf, BUFSZ, 0);
-            printf("[msg] %s, %d, bytes: %s\n", caddrstr, (int)count, buf);
+            printf("Buffer: %s\n", buf);
+            // printf("[msg] %s, %d, bytes: \n%s", caddrstr, (int)count, buf);
+            if(verify_exit(buf)) {
+                printf("Connection closed\n");
+                break;
+            }
 
             sprintf(buf, "Mensagem teste: remote endpoint: %.500s\n", caddrstr);
             count = send(csock, buf, strlen(buf) + 1, 0);
@@ -79,6 +92,7 @@ int main (int argc, char **argv) {
             }
         }
         close(csock);
+        exit(EXIT_SUCCESS);
     }
 
     exit(EXIT_SUCCESS);
