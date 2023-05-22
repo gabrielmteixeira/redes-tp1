@@ -80,13 +80,18 @@ int main (int argc, char **argv) {
             memset(buf, 0, BUFSZ);
             memset(server_response, 0, BUFSZ);
             size_t count = recv(csock, buf, BUFSZ, 0);
-            printf("Buffer: %s\n", buf);
 
-            if(verify_exit(buf)) {
+            if (count == 0) {
+                close(csock);
+                return 1;
+            }
+
+            if (verify_exit(buf)) {
                 printf("Connection closed\n");
                 close(csock);
                 exit(EXIT_SUCCESS);
             }
+            printf("Buffer: %s\n", buf);
 
             char filename[BUFSZ];
             char file_content[BUFSZ];
@@ -133,9 +138,9 @@ int main (int argc, char **argv) {
             fclose(file);
 
             if (file_already_existed) {
-                sprintf(server_response, "file %.300s overwritten\n", filename);
+                sprintf(server_response, "file %.500s overwritten\n", filename);
             } else {
-                sprintf(server_response, "file %.300s received\n", filename);
+                sprintf(server_response, "file %.500s received\n", filename);
             }
             printf("Server response: %s\n", server_response);
 

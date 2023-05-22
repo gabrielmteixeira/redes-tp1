@@ -151,7 +151,6 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
             // }
             // printf("received %u bytes\n", total);
 
-            // puts(server_response);
             printf("Server response: %s\n", server_response);
             memset(server_response, 0, BUFSZ);
         } else if (verify_exit(command)) { // "exit" command
@@ -166,7 +165,6 @@ int main (int argc, char **argv) { //argv[1] stores the address and argv[2] stor
             close(s);
             exit(EXIT_SUCCESS);
         } else { // Unknown command
-            puts("Unknown command");
             close(s);
             return 1;
         }
